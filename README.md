@@ -12,9 +12,15 @@ The geolocator in this go module consequently makes a request every 5 seconds (1
 
 ## Usage
 
-`NewGeolocator` should be used to create a `Geolocator` instance. `NewGeolocator` takes one integer argument specifying the size of the queue in the `Geolocator`. If the `Geolocator` runs out of space in its queue it will return an error, `GeolocatorQueueFull`, when you try to call `Locate` with a new IP.
+`NewGeolocator` should be used to create a `Geolocator` instance. 
 
-Once you have a `Geolocator` instance, you can call `Locate` on it whenever you want. If the `Geolocator` hasn't queried ip-api for its geolocation yet, but it has been queued, it'll return an error (`LocationNotYetFound`). 
+`NewGeolocator` takes one integer argument specifying the size of the queue in the `Geolocator`. If the `Geolocator` runs out of space in its queue it will return an error, `GeolocatorQueueFull`, when you try to call `Locate` with a new IP.
+
+Once you have a `Geolocator` instance, you can call `Locate` on it whenever you want. 
+
+If the `Geolocator` hasn't queried ip-api for its geolocation yet, and it hasn't been queued, it will be queued. 
+
+Until the `Geolocator` has queried ip-api for its geolocation, a `LocationNotYetFound` error will be returned.
 
 
 
