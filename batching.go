@@ -25,9 +25,10 @@ func (g *Geolocator) locateBatch(IPs []string) {
 	// Make bulk query to ip-api
 	requestBody := strings.NewReader(string(queryData))
 	r, err := http.Post(queryURL, "application/json", requestBody)
-	if err == nil {
-		defer r.Body.Close()
+	if err != nil {
+		return
 	}
+	defer r.Body.Close()
 
 	// Unpack results from the ip-api query
 	responseRaw, err := ioutil.ReadAll(r.Body)
