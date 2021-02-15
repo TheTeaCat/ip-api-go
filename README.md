@@ -8,7 +8,7 @@ With regards to the /batch endpoint, the [ip-api batch endpoint docs](https://ip
 
 The geolocator in this go module consequently makes a request every 5 seconds (12 times a minute) to safely respect this limit. This makes it capable of geolocating up to 1200 IPs per minute.
 
-If you're looking for a module to make no more than 45 geolocation queries per minute then you're probably better off using ip-api yourself directly for instant results.
+If you're looking for a module to make no more than 45 geolocation queries per minute then you're probably better off using [one of ip-api's non-batch endpoints](https://ip-api.com/docs/api:json) yourself directly for instant results.
 
 
 
