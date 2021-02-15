@@ -16,6 +16,8 @@ The geolocator in this go module consequently makes a request every 5 seconds (1
 
 Once you have a `Geolocator` instance, you can call `Locate` on it whenever you want. If the `Geolocator` hasn't queried ip-api for its geolocation yet, and it hasn't been queued, it will be queued. Until the `Geolocator` has queried ip-api for its geolocation, a `LocationNotYetFound` error will be returned. Once the geolocator has queried ip-api and cached the value for the IP you're requesting, it will return a `Geolocation`.
 
+The cache of a `Geolocator` is not automatically cleared. You must call `ClearCache` on it periodically, or when its cache gets too big.
+
 
 
 ## Example usage
