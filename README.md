@@ -6,7 +6,15 @@ With regards to the /batch endpoint, the [ip-api batch endpoint docs](https://ip
 
 > This endpoint is limited to **15** requests per minute from an IP address.
 
-The geolocator in this go module consequently makes a request every 5 seconds (12 times a minute) to safely respect this limit.
+The geolocator in this go module consequently makes a request every 5 seconds (12 times a minute) to safely respect this limit. It is consequently capable of geolocating up to 1200 IPs per minute.
+
+
+
+## Usage
+
+`NewGeolocator` should be used to create a `Geolocator` instance. `NewGeolocator` takes one integer argument specifying the size of the queue in the `Geolocator`. If the `Geolocator` runs out of space in its queue it will return an error, `GeolocatorQueueFull`, when you try to call `Locate` with a new IP.
+
+Once you have a `Geolocator` instance, you can call `Locate` on it whenever you want. If the `Geolocator` hasn't queried ip-api for its geolocation yet, but it has been queued, it'll return an error (`LocationNotYetFound`). 
 
 
 
