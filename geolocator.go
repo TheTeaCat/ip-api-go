@@ -31,6 +31,14 @@ func NewGeolocator(queueCap int) *Geolocator {
 	return g
 }
 
+/*ClearCache clears the cache of the geolocator. It would be prudent to call this at regular intervals, or when g.cache
+gets big, to avoid a memory leak. */
+func (g *Geolocator) ClearCache() {
+	g.cacheMutex.Lock()
+	defer g.cacheMutex.Unlock()
+	g.cache = make(map[string]*cachedGeolocation)
+}
+
 //Locate takes an IP and returns a Geolocation. If it's not yet found, it will return nil and an error.
 func (g *Geolocator) Locate(IP string) (*Geolocation, error) {
 	// Check for a cached value first!
