@@ -11,6 +11,7 @@ type Geolocator struct {
 	cache      map[string]*cachedGeolocation
 	cacheMutex *sync.Mutex
 	queue      chan string
+	dev        bool //if dev is true, we just use dummy locations.
 }
 
 /*NewGeolocator takes an int which specifies the size of the queue the geolocator uses to hold IP location requests. It

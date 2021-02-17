@@ -3,6 +3,7 @@ package geolocator
 import (
 	"encoding/json"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
 )
@@ -18,6 +19,11 @@ func (g *Geolocator) locateBatch(IPs []string) {
 
 	//defer processing the batch with the error provided.
 	defer g.processBatch(IPs, &responseData, &err)
+
+	//If we're in dev mode then we needn't go further
+	if g.dev {
+		return
+	}
 
 	//Create ip-api query data for POST request.
 	queryData, err := json.Marshal(IPs)
@@ -45,10 +51,18 @@ func (g *Geolocator) processBatch(IPs []string, geolocations *[]Geolocation, err
 	g.cacheMutex.Lock()
 	defer g.cacheMutex.Unlock()
 
-	// Go over every geolocation and add it to the cache if the query matches a value
-	for _, geolocation := range *geolocations {
-		if cachedVal, cachedValExists := g.cache[geolocation.Query]; cachedValExists {
-			cachedVal.geolocation = &geolocation
+	if g.dev {
+		// If we're in dev mode we just use dummy locations
+		for _, IP := range IPs {
+			g.cache[IP].geolocation = dummyGeolocations[rand.Intn(len(dummyGeolocations))]
+			g.cache[IP].geolocation.Query = IP
+		}
+	} else {
+		//Otherwise we go over every geolocation and add it to the cache if the query matches a value
+		for _, geolocation := range *geolocations {
+			if cachedVal, cachedValExists := g.cache[geolocation.Query]; cachedValExists {
+				cachedVal.geolocation = &geolocation
+			}
 		}
 	}
 
