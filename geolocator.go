@@ -16,18 +16,19 @@ type Geolocator struct {
 /*NewGeolocator takes an int which specifies the size of the queue the geolocator uses to hold IP location requests. It
 is emptied at a rate of up to 100 IPs every 5 seconds, so the queue must be sized sensibly according to your application
 in order to mitigate the risk of it overfilling. */
-func NewGeolocator(queueCap int) *Geolocator {
-	// Create a geolocator
+func NewGeolocator(queueCap int, dev bool) *Geolocator {
+	//Create a geolocator
 	g := &Geolocator{
 		cache:      make(map[string]*cachedGeolocation),
 		cacheMutex: &sync.Mutex{},
 		queue:      make(chan string, queueCap),
+		dev:        dev,
 	}
 
-	// Start the geolocator (queries ip-api periodically)
+	//Start the geolocator (queries ip-api periodically)
 	go g.start()
 
-	// Return the geolocator instance
+	//Return the geolocator instance
 	return g
 }
 
@@ -41,32 +42,32 @@ func (g *Geolocator) ClearCache() {
 
 //Locate takes an IP and returns a Geolocation. If it's not yet found, it will return nil and an error.
 func (g *Geolocator) Locate(IP string) (*Geolocation, error) {
-	// Check for a cached value first!
+	//Check for a cached value first!
 	g.cacheMutex.Lock()
 	cachedVal, cached := g.cache[IP]
 	g.cacheMutex.Unlock()
 
 	/* If the value doesn't even have a placeholder in the cache, we enqueue it. */
 	if !cached {
-		err := g.enqueue(IP) // This may err if the queue is full.
+		err := g.enqueue(IP) //This may err if the queue is full.
 		if err != nil {
 			return nil, err
 		}
-		// The location will not immediately be found so we return a LocationNotYetFound error.
+		//The location will not immediately be found so we return a LocationNotYetFound error.
 		return nil, errors.New(LocationNotYetFound)
 	}
 
-	// If the value hasn't yet been loaded then we still return a LocationNotYetFound error.
+	//If the value hasn't yet been loaded then we still return a LocationNotYetFound error.
 	if !cachedVal.loaded {
 		return nil, errors.New(LocationNotYetFound)
 	}
 
-	// Once it's loaded, we return the geolocation and error straight from the cachedVal (either could still be nil)
+	//Once it's loaded, we return the geolocation and error straight from the cachedVal (either could still be nil)
 	return cachedVal.geolocation, cachedVal.err
 }
 
 func (g *Geolocator) enqueue(IP string) error {
-	// First, we add an empty placeholder value to the cache to mark it as requested...
+	//First, we add an empty placeholder value to the cache to mark it as requested...
 	g.cacheMutex.Lock()
 	g.cache[IP] = &cachedGeolocation{
 		geolocation: nil,
@@ -75,12 +76,12 @@ func (g *Geolocator) enqueue(IP string) error {
 	}
 	g.cacheMutex.Unlock()
 
-	// ...then add the IP to the queue.
+	//...then add the IP to the queue.
 	select {
 	case g.queue <- IP:
 		return nil
 	default:
-		// If the queue is full, we return the relevant error.
+		//If the queue is full, we return the relevant error.
 		return errors.New(GeolocatorQueueFull)
 	}
 }
