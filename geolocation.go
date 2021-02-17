@@ -58,8 +58,7 @@ var dummyGeolocations []*Geolocation = []*Geolocation{
 		Asname:        "GOOGLE",
 		Mobile:        false,
 		Proxy:         false,
-		Hosting:       true,
-		Query:         "8.8.8.8",
+		Hosting:       false,
 	},
 	&Geolocation{
 		Status:        "success",
@@ -82,9 +81,8 @@ var dummyGeolocations []*Geolocation = []*Geolocation{
 		As:            "AS22363 Powerhouse Management, Inc.",
 		Asname:        "PHMGMT-AS1",
 		Mobile:        false,
-		Proxy:         true,
-		Hosting:       true,
-		Query:         "178.208.160.22",
+		Proxy:         false,
+		Hosting:       false,
 	},
 	&Geolocation{
 		Status:        "success",
@@ -109,6 +107,5 @@ var dummyGeolocations []*Geolocation = []*Geolocation{
 		Mobile:        false,
 		Proxy:         false,
 		Hosting:       false,
-		Query:         "1.33.213.199",
 	},
 }
