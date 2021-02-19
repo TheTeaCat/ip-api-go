@@ -41,6 +41,12 @@ func (g *Geolocator) ClearCache() {
 	g.cache = make(map[string]*cachedGeolocation)
 }
 
+/*CacheSize simply returns the current size of the cache. Expected to be used to determine when to call ClearCache, or
+for logging purposes. */
+func (g *Geolocator) CacheSize() int {
+	return len(g.cache)
+}
+
 //Locate takes an IP and returns a Geolocation. If it's not yet found, it will return nil and an error.
 func (g *Geolocator) Locate(IP string) (*Geolocation, error) {
 	//Check for a cached value first!
