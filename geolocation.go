@@ -36,7 +36,7 @@ type cachedGeolocation struct {
 }
 
 var dummyGeolocations []*Geolocation = []*Geolocation{
-	&Geolocation{
+	{
 		Status:        "success",
 		Continent:     "North America",
 		ContinentCode: "NA",
@@ -60,7 +60,7 @@ var dummyGeolocations []*Geolocation = []*Geolocation{
 		Proxy:         false,
 		Hosting:       false,
 	},
-	&Geolocation{
+	{
 		Status:        "success",
 		Continent:     "Europe",
 		ContinentCode: "EU",
@@ -84,7 +84,7 @@ var dummyGeolocations []*Geolocation = []*Geolocation{
 		Proxy:         false,
 		Hosting:       true,
 	},
-	&Geolocation{
+	{
 		Status:        "success",
 		Continent:     "Asia",
 		ContinentCode: "AS",
