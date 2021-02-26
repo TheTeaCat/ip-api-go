@@ -70,14 +70,14 @@ func (g *Geolocator) Locate(IP string) (*Geolocation, error) {
 	}
 
 	//Once it's loaded, we return the geolocation and error straight from the cachedVal (either could still be nil)
-	return cachedVal.geolocation, cachedVal.err
+	return &cachedVal.geolocation, cachedVal.err
 }
 
 func (g *Geolocator) enqueue(IP string) error {
 	//First, we add an empty placeholder value to the cache to mark it as requested...
 	g.cacheMutex.Lock()
 	g.cache[IP] = &cachedGeolocation{
-		geolocation: nil,
+		geolocation: Geolocation{},
 		loaded:      false,
 		err:         nil,
 	}

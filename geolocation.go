@@ -30,12 +30,12 @@ type Geolocation struct {
 /*cachedGeolocation holds a geolocation when it's fetched from ip-api. Until then, loaded will be false. The geolocation
 may remain nil if ip-api fails, in which case loaded will be true and err will contain the relevant error. */
 type cachedGeolocation struct {
-	geolocation *Geolocation
+	geolocation Geolocation
 	loaded      bool
 	err         error
 }
 
-var dummyGeolocations []*Geolocation = []*Geolocation{
+var dummyGeolocations []Geolocation = []Geolocation{
 	{
 		Status:        "success",
 		Continent:     "North America",
