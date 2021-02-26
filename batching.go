@@ -60,8 +60,9 @@ func (g *Geolocator) processBatch(IPs []string, geolocations *[]Geolocation, err
 	} else {
 		//Otherwise we go over every geolocation and add it to the cache if the query matches a value
 		for _, geolocation := range *geolocations {
-			if cachedVal, cachedValExists := g.cache[geolocation.Query]; cachedValExists {
-				cachedVal.geolocation = &geolocation
+			_, cachedValExists := g.cache[geolocation.Query]
+			if cachedValExists {
+				g.cache[geolocation.Query].geolocation = &geolocation
 			}
 		}
 	}
