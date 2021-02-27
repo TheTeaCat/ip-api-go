@@ -82,7 +82,7 @@ var dummyGeolocations []Geolocation = []Geolocation{
 		Asname:        "AMAZON-02",
 		Mobile:        false,
 		Proxy:         false,
-		Hosting:       true,
+		Hosting:       false,
 	},
 	{
 		Status:        "success",
