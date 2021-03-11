@@ -47,6 +47,28 @@ func (g *Geolocator) CacheSize() int {
 	return len(g.cache)
 }
 
+/*Proxies returns the number of geolocations currently in the geolocator cache flagged as proxies by ip-api*/
+func (g *Geolocator) Proxies() int {
+	n := 0
+	for _, cachedgeo := range g.cache {
+		if cachedgeo.loaded && cachedgeo.geolocation.Proxy {
+			n++
+		}
+	}
+	return n
+}
+
+/*Hosts returns the number of geolocations currently in the geolocator cache flagged as hosts by ip-api*/
+func (g *Geolocator) Hosts() int {
+	n := 0
+	for _, cachedgeo := range g.cache {
+		if cachedgeo.loaded && cachedgeo.geolocation.Hosting {
+			n++
+		}
+	}
+	return n
+}
+
 //Locate takes an IP and returns a Geolocation. If it's not yet found, it will return nil and an error.
 func (g *Geolocator) Locate(IP string) (*Geolocation, error) {
 	//Check for a cached value first!
