@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const queryURL = "http://ip-api.com/batch?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,mobile,proxy,hosting,query"
@@ -68,8 +69,10 @@ func (g *Geolocator) processBatch(IPs []string, geolocations *[]Geolocation, err
 	}
 
 	//Update the loaded state and error for every IP in the batch.
+	t := time.Now()
 	for _, IP := range IPs {
 		g.cache[IP].loaded = true
+		g.cache[IP].loadedAt = t
 		g.cache[IP].err = *err
 	}
 }

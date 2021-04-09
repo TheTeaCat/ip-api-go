@@ -1,5 +1,7 @@
 package geolocator
 
+import "time"
+
 /*Geolocation contains the geolocation data from an ip-api query response */
 type Geolocation struct {
 	Status        string
@@ -32,6 +34,7 @@ may remain nil if ip-api fails, in which case loaded will be true and err will c
 type cachedGeolocation struct {
 	geolocation Geolocation
 	loaded      bool
+	loadedAt    time.Time
 	err         error
 }
 

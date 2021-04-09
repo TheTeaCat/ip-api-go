@@ -70,12 +70,23 @@ func (g *Geolocator) Hosts() int {
 //Delete removes a geolocation from the cache
 func (g *Geolocator) Delete(IP string) bool {
 	g.cacheMutex.Lock()
+	defer g.cacheMutex.Unlock()
 	cachedVal, cached := g.cache[IP]
 	if cached && cachedVal.loaded {
 		delete(g.cache, IP)
 	}
-	g.cacheMutex.Unlock()
 	return cached
+}
+
+//Prune removes all the cached values older than a provided duration
+func (g *Geolocator) Prune(maxAge time.Duration) {
+	g.cacheMutex.Lock()
+	defer g.cacheMutex.Unlock()
+	for IP, cachedVal := range g.cache {
+		if time.Since(cachedVal.loadedAt) > maxAge {
+			delete(g.cache, IP)
+		}
+	}
 }
 
 //Locate takes an IP and returns a Geolocation. If it's not yet found, it will return nil and an error.
