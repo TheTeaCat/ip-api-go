@@ -58,6 +58,7 @@ func (g *Geolocator) processBatch(IPs []string, geolocations []Geolocation, err 
 	g.cacheMutex.Lock()
 	defer g.cacheMutex.Unlock()
 
+	//Add all the geolocations to the cache
 	if g.dev {
 		// If we're in dev mode we just use dummy locations
 		for _, IP := range IPs {
@@ -74,11 +75,15 @@ func (g *Geolocator) processBatch(IPs []string, geolocations []Geolocation, err 
 		}
 	}
 
-	//Update the loaded state and error for every IP in the batch.
-	t := time.Now()
+	//The time we'll use for the loadedAt fields of all the geolocations
+	loadedAt := time.Now()
+
 	for _, IP := range IPs {
-		g.cache[IP].loaded = true
-		g.cache[IP].loadedAt = t
-		g.cache[IP].err = err
+		//This may be nil if it's been cleared by a prune.
+		if g.cache[IP] != nil {
+			g.cache[IP].err = err
+			g.cache[IP].loadedAt = loadedAt
+			g.cache[IP].loaded = true
+		}
 	}
 }
