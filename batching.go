@@ -12,14 +12,8 @@ import (
 const queryURL = "http://ip-api.com/batch?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,mobile,proxy,hosting,query"
 
 func (g *Geolocator) locateBatch(IPs []string) {
-	//responseData will hold all of the responses we get from ip-api
-	responseData := make([]Geolocation, 0)
-
 	//err will hold any error that occurs in the process of querying ip-api for this batch of geolocations
 	var err error
-
-	//defer processing the batch with the error provided.
-	defer g.processBatch(IPs, &responseData, &err)
 
 	//If we're in dev mode then we needn't go further
 	if g.dev {
@@ -32,22 +26,34 @@ func (g *Geolocator) locateBatch(IPs []string) {
 	//Make bulk query to ip-api
 	requestBody := strings.NewReader(string(queryData))
 	r, err := http.Post(queryURL, "application/json", requestBody)
+
+	//If err, process the batch by applying the error to all the cached vals
 	if err != nil {
+		g.processBatch(IPs, make([]Geolocation, 0), err)
 		return
 	}
+
+	//Remember to close our request body!
 	defer r.Body.Close()
 
 	//Unpack results from the ip-api query
 	responseRaw, err := ioutil.ReadAll(r.Body)
+	//If err, process the batch by applying the error to all the cached vals
 	if err != nil {
-		return
+		g.processBatch(IPs, make([]Geolocation, 0), err)
 	}
+
+	//responseData will hold all of the responses we get from ip-api
+	responseData := make([]Geolocation, 0)
 
 	//Unmarshal the result from the ip-api query
 	err = json.Unmarshal(responseRaw, &responseData)
+
+	//process the batch with the error provided.
+	g.processBatch(IPs, responseData, err)
 }
 
-func (g *Geolocator) processBatch(IPs []string, geolocations *[]Geolocation, err *error) {
+func (g *Geolocator) processBatch(IPs []string, geolocations []Geolocation, err error) {
 	//We're going to be doing a lot of reads and writes to the cache so we lock it now and just defer the call to Unlock.
 	g.cacheMutex.Lock()
 	defer g.cacheMutex.Unlock()
@@ -60,7 +66,7 @@ func (g *Geolocator) processBatch(IPs []string, geolocations *[]Geolocation, err
 		}
 	} else {
 		//Otherwise we go over every geolocation and add it to the cache if the query matches a value
-		for _, geolocation := range *geolocations {
+		for _, geolocation := range geolocations {
 			_, cachedValExists := g.cache[geolocation.Query]
 			if cachedValExists {
 				g.cache[geolocation.Query].geolocation = geolocation
@@ -73,6 +79,6 @@ func (g *Geolocator) processBatch(IPs []string, geolocations *[]Geolocation, err
 	for _, IP := range IPs {
 		g.cache[IP].loaded = true
 		g.cache[IP].loadedAt = t
-		g.cache[IP].err = *err
+		g.cache[IP].err = err
 	}
 }
