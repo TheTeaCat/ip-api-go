@@ -33,14 +33,6 @@ func NewGeolocator(queueCap int, dev bool) *Geolocator {
 	return g
 }
 
-/*ClearCache clears the cache of the geolocator. It would be prudent to call this at regular intervals, or when g.cache
-gets big, to avoid a memory leak. */
-func (g *Geolocator) ClearCache() {
-	g.cacheMutex.Lock()
-	defer g.cacheMutex.Unlock()
-	g.cache = make(map[string]*cachedGeolocation)
-}
-
 /*CacheSize simply returns the current size of the cache. Expected to be used to determine when to call ClearCache, or
 for logging purposes. */
 func (g *Geolocator) CacheSize() int {
@@ -73,6 +65,17 @@ func (g *Geolocator) Hosts() int {
 		}
 	}
 	return n
+}
+
+//Delete removes a geolocation from the cache
+func (g *Geolocator) Delete(IP string) bool {
+	g.cacheMutex.Lock()
+	cachedVal, cached := g.cache[IP]
+	if cached && cachedVal.loaded {
+		delete(g.cache, IP)
+	}
+	g.cacheMutex.Unlock()
+	return cached
 }
 
 //Locate takes an IP and returns a Geolocation. If it's not yet found, it will return nil and an error.
