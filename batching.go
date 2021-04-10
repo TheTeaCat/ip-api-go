@@ -17,6 +17,7 @@ func (g *Geolocator) locateBatch(IPs []string) {
 
 	//If we're in dev mode then we needn't go further
 	if g.dev {
+		g.processBatch(IPs, make([]Geolocation, 0), err)
 		return
 	}
 
