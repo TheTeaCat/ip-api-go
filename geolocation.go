@@ -5,6 +5,7 @@ import "time"
 /*Geolocation contains the geolocation data from an ip-api query response */
 type Geolocation struct {
 	Status        string
+	Message       string
 	Continent     string
 	ContinentCode string
 	Country       string
@@ -41,6 +42,7 @@ type cachedGeolocation struct {
 var dummyGeolocations []Geolocation = []Geolocation{
 	{
 		Status:        "success",
+		Message:       "",
 		Continent:     "North America",
 		ContinentCode: "NA",
 		Country:       "United States",
@@ -65,6 +67,7 @@ var dummyGeolocations []Geolocation = []Geolocation{
 	},
 	{
 		Status:        "success",
+		Message:       "",
 		Continent:     "Europe",
 		ContinentCode: "EU",
 		Country:       "Ireland",
@@ -89,6 +92,7 @@ var dummyGeolocations []Geolocation = []Geolocation{
 	},
 	{
 		Status:        "success",
+		Message:       "",
 		Continent:     "Asia",
 		ContinentCode: "AS",
 		Country:       "Japan",
