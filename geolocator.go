@@ -9,7 +9,7 @@ import (
 //Geolocator holds a cache and a queue of IPs for which the geolocation has been requested.
 type Geolocator struct {
 	cache      map[string]*cachedGeolocation
-	cacheMutex *sync.Mutex
+	cacheMutex *sync.RWMutex
 	queue      chan string
 	dev        bool //if dev is true, we just use dummy locations.
 }
@@ -21,7 +21,7 @@ func NewGeolocator(queueCap int, dev bool) *Geolocator {
 	//Create a geolocator
 	g := &Geolocator{
 		cache:      make(map[string]*cachedGeolocation),
-		cacheMutex: &sync.Mutex{},
+		cacheMutex: &sync.RWMutex{},
 		queue:      make(chan string, queueCap),
 		dev:        dev,
 	}
@@ -36,15 +36,15 @@ func NewGeolocator(queueCap int, dev bool) *Geolocator {
 /*CacheSize simply returns the current size of the cache. Expected to be used to determine when to call ClearCache, or
 for logging purposes. */
 func (g *Geolocator) CacheSize() int {
-	g.cacheMutex.Lock()
-	defer g.cacheMutex.Unlock()
+	g.cacheMutex.RLock()
+	defer g.cacheMutex.RUnlock()
 	return len(g.cache)
 }
 
 /*Proxies returns the number of geolocations currently in the geolocator cache flagged as proxies by ip-api*/
 func (g *Geolocator) Proxies() int {
-	g.cacheMutex.Lock()
-	defer g.cacheMutex.Unlock()
+	g.cacheMutex.RLock()
+	defer g.cacheMutex.RUnlock()
 	n := 0
 	for _, cachedgeo := range g.cache {
 		if cachedgeo.loaded && cachedgeo.geolocation.Proxy {
@@ -56,8 +56,8 @@ func (g *Geolocator) Proxies() int {
 
 /*Hosts returns the number of geolocations currently in the geolocator cache flagged as hosts by ip-api*/
 func (g *Geolocator) Hosts() int {
-	g.cacheMutex.Lock()
-	defer g.cacheMutex.Unlock()
+	g.cacheMutex.RLock()
+	defer g.cacheMutex.RUnlock()
 	n := 0
 	for _, cachedgeo := range g.cache {
 		if cachedgeo.loaded && cachedgeo.geolocation.Hosting {
@@ -92,9 +92,9 @@ func (g *Geolocator) Prune(maxAge time.Duration) {
 //Locate takes an IP and returns a Geolocation. If it's not yet found, it will return nil and an error.
 func (g *Geolocator) Locate(IP string) (*Geolocation, error) {
 	//Check for a cached value first!
-	g.cacheMutex.Lock()
+	g.cacheMutex.RLock()
 	cachedVal, cached := g.cache[IP]
-	g.cacheMutex.Unlock()
+	g.cacheMutex.RUnlock()
 
 	/* If the value doesn't even have a placeholder in the cache, we enqueue it. */
 	if !cached {
