@@ -27,15 +27,13 @@ func (g *Geolocator) locateBatch(IPs []string) {
 	//Make bulk query to ip-api
 	requestBody := strings.NewReader(string(queryData))
 	r, err := http.Post(queryURL, "application/json", requestBody)
+	defer r.Body.Close() //Remember to close our request body!
 
 	//If err, process the batch by applying the error to all the cached vals
 	if err != nil {
 		g.processBatch(IPs, make([]Geolocation, 0), err)
 		return
 	}
-
-	//Remember to close our request body!
-	defer r.Body.Close()
 
 	//Unpack results from the ip-api query
 	responseRaw, err := ioutil.ReadAll(r.Body)
