@@ -12,18 +12,23 @@ type Geolocator struct {
 	cacheMutex *sync.RWMutex
 	queue      chan string
 	dev        bool //if dev is true, we just use dummy locations.
+	/*postBatchCallback is called after each batch was processed with the number
+	of IPs that were in that batch (batchSize), and the time since the last batch
+	was located (sinceLastBatchLocated). */
+	postBatchCallback *func(batchSize int, sinceLastBatchLocated time.Duration)
 }
 
 /*NewGeolocator takes an int which specifies the size of the queue the geolocator uses to hold IP location requests. It
 is emptied at a rate of up to 100 IPs every 5 seconds, so the queue must be sized sensibly according to your application
 in order to mitigate the risk of it overfilling. */
-func NewGeolocator(queueCap int, dev bool) *Geolocator {
+func NewGeolocator(queueCap int, dev bool, postBatchCallback *func(batchSize int, sinceLastBatchLocated time.Duration)) *Geolocator {
 	//Create a geolocator
 	g := &Geolocator{
-		cache:      make(map[string]*cachedGeolocation),
-		cacheMutex: &sync.RWMutex{},
-		queue:      make(chan string, queueCap),
-		dev:        dev,
+		cache:             make(map[string]*cachedGeolocation),
+		cacheMutex:        &sync.RWMutex{},
+		queue:             make(chan string, queueCap),
+		dev:               dev,
+		postBatchCallback: postBatchCallback,
 	}
 
 	//Start the geolocator (queries ip-api periodically)
@@ -164,8 +169,13 @@ func (g *Geolocator) start() {
 
 		/*If it's been at least 5 seconds since the last call to ip-api, and there are IPs ready to locate, then we make the
 		locate the batch.*/
-		if (len(batchToLocate) == 100 || len(g.queue) < 10) && time.Now().Sub(lastLocateCall).Seconds() >= 5 {
+		sinceLastBatch := time.Since(lastLocateCall)
+		if (len(batchToLocate) == 100 || len(g.queue) < 10) && sinceLastBatch.Seconds() >= 5 {
 			g.locateBatch(batchToLocate)
+			//Call our callback if we have one
+			if g.postBatchCallback != nil {
+				(*g.postBatchCallback)(len(batchToLocate), sinceLastBatch)
+			}
 			//Remember to update the time of the last ip-api call to time.Now() and clear the batch.
 			lastLocateCall = time.Now()
 			batchToLocate = make([]string, 0)
