@@ -159,7 +159,7 @@ func (g *Geolocator) start() {
 
 		/*If it's been at least 5 seconds since the last call to ip-api, and there are IPs ready to locate, then we make the
 		locate the batch.*/
-		if len(batchToLocate) > 0 && time.Now().Sub(lastLocateCall).Seconds() >= 5 {
+		if (len(batchToLocate) == 100 || len(g.queue) < 10) && time.Now().Sub(lastLocateCall).Seconds() >= 5 {
 			g.locateBatch(batchToLocate)
 			//Remember to update the time of the last ip-api call to time.Now() and clear the batch.
 			lastLocateCall = time.Now()
