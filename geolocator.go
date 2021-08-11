@@ -41,6 +41,11 @@ func (g *Geolocator) CacheSize() int {
 	return len(g.cache)
 }
 
+/*QueueSize simply returns the current size of the queue. Expected to be used for logging purposes. */
+func (g *Geolocator) QueueSize() int {
+	return len(g.queue)
+}
+
 /*Proxies returns the number of geolocations currently in the geolocator cache flagged as proxies by ip-api*/
 func (g *Geolocator) Proxies() int {
 	g.cacheMutex.RLock()
