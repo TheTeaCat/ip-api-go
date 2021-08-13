@@ -8,10 +8,11 @@ import (
 
 //Geolocator holds a cache and a queue of IPs for which the geolocation has been requested.
 type Geolocator struct {
-	cache      map[string]*cachedGeolocation
-	cacheMutex *sync.RWMutex
-	queue      chan string
-	dev        bool //if dev is true, we just use dummy locations.
+	cache         map[string]*cachedGeolocation
+	cacheMutex    *sync.RWMutex
+	queueIncoming chan string // gatekeeper for the main ring buffer (ouroboros).
+	queueOutgoing chan string // the main queue is a ring buffer.
+	dev           bool        //if dev is true, we just use dummy locations.
 	/*postBatchCallback is called after each batch was processed with the number
 	of IPs that were in that batch (batchSize), and the time since the last batch
 	was located (sinceLastBatchLocated). */
@@ -26,13 +27,17 @@ func NewGeolocator(queueCap int, dev bool, postBatchCallback *func(batchSize int
 	g := &Geolocator{
 		cache:             make(map[string]*cachedGeolocation),
 		cacheMutex:        &sync.RWMutex{},
-		queue:             make(chan string, queueCap),
+		queueIncoming:     make(chan string, 100),
+		queueOutgoing:     make(chan string, queueCap),
 		dev:               dev,
 		postBatchCallback: postBatchCallback,
 	}
 
 	//Start the geolocator (queries ip-api periodically)
 	go g.start()
+
+	// Start the ring queue.
+	go g.ouroboros()
 
 	//Return the geolocator instance
 	return g
@@ -48,7 +53,7 @@ func (g *Geolocator) CacheSize() int {
 
 /*QueueSize simply returns the current size of the queue. Expected to be used for logging purposes. */
 func (g *Geolocator) QueueSize() int {
-	return len(g.queue)
+	return len(g.queueOutgoing) + len(g.queueIncoming)
 }
 
 /*Proxies returns the number of geolocations currently in the geolocator cache flagged as proxies by ip-api*/
@@ -137,7 +142,7 @@ func (g *Geolocator) enqueue(IP string) error {
 
 	//...then add the IP to the queue.
 	select {
-	case g.queue <- IP:
+	case g.queueIncoming <- IP:
 		return nil
 	default:
 		//If the queue is full, we return the relevant error.
@@ -156,7 +161,7 @@ func (g *Geolocator) start() {
 		//If IPsToLocate isn't full, we check if the queue channel has a value ready to add to the batch
 		if len(batchToLocate) < 100 {
 			select {
-			case IP, ok := <-g.queue:
+			case IP, ok := <-g.queueOutgoing:
 				if ok {
 					batchToLocate = append(batchToLocate, IP)
 					continue
@@ -170,7 +175,7 @@ func (g *Geolocator) start() {
 		/*If it's been at least 5 seconds since the last call to ip-api, and there are IPs ready to locate, then we make the
 		locate the batch.*/
 		sinceLastBatch := time.Since(lastLocateCall)
-		if (len(batchToLocate) == 100 || len(g.queue) < 10) && sinceLastBatch.Seconds() >= 5 {
+		if (len(batchToLocate) == 100 || len(g.queueOutgoing) < 10) && sinceLastBatch.Seconds() >= 5 {
 			g.locateBatch(batchToLocate)
 			//Call our callback if we have one
 			if g.postBatchCallback != nil {
@@ -179,6 +184,19 @@ func (g *Geolocator) start() {
 			//Remember to update the time of the last ip-api call to time.Now() and clear the batch.
 			lastLocateCall = time.Now()
 			batchToLocate = make([]string, 0)
+		}
+	}
+}
+
+func (g *Geolocator) ouroboros() {
+	for val := range g.queueIncoming {
+		select {
+		case g.queueOutgoing <- val:
+			// could add to ring buffer, do nothing.
+		default:
+			// outgoing ring full, drop first item.
+			<-g.queueOutgoing
+			g.queueOutgoing <- val
 		}
 	}
 }
