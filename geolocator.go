@@ -203,9 +203,9 @@ func (g *Geolocator) start() {
 		}
 
 		/*If it's been at least g.minBatchGapTime since the last call to ip-api, and there is a full batch of IPs ready to
-		locate or the backlog is almost empty, then we locate the batch.*/
+		locate or the backlog is almost empty, and there is an IP in the batch, then we locate the batch.*/
 		sinceLastBatch := time.Since(lastLocateCall)
-		if (len(batchToLocate) == 100 || len(g.queueOutgoing) < 10) && sinceLastBatch >= g.minBatchGapTime {
+		if (len(batchToLocate) == 100 || len(g.queueOutgoing) < 10) && sinceLastBatch >= g.minBatchGapTime && len(batchToLocate) > 0 {
 			g.locateBatch(batchToLocate)
 			//Call our callback if we have one
 			if g.postBatchCallback != nil {
