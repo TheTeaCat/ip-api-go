@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-const queryURL = "http://ip-api.com/batch?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,mobile,proxy,hosting,query"
-
 func (g *Geolocator) locateBatch(IPs []string) {
 	//err will hold any error that occurs in the process of querying ip-api for this batch of geolocations
 	var err error
@@ -26,7 +24,7 @@ func (g *Geolocator) locateBatch(IPs []string) {
 
 	//Make bulk query to ip-api
 	requestBody := strings.NewReader(string(queryData))
-	r, err := http.Post(queryURL, "application/json", requestBody)
+	r, err := http.Post(g.queryURL, "application/json", requestBody)
 	defer r.Body.Close() //Remember to close our request body!
 
 	//If err, process the batch by applying the error to all the cached vals

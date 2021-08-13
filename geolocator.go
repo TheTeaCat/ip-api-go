@@ -6,13 +6,17 @@ import (
 	"time"
 )
 
+const baseQueryURL = "http://ip-api.com/batch?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,mobile,proxy,hosting,query"
+
 //Geolocator holds a cache and a queue of IPs for which the geolocation has been requested.
 type Geolocator struct {
-	cache         map[string]*cachedGeolocation
-	cacheMutex    *sync.RWMutex
-	queueIncoming chan string // gatekeeper for the main ring buffer (ouroboros).
-	queueOutgoing chan string // the main queue is a ring buffer.
-	dev           bool        //if dev is true, we just use dummy locations.
+	cache           map[string]*cachedGeolocation
+	cacheMutex      *sync.RWMutex
+	queueIncoming   chan string   // gatekeeper for the main ring buffer (ouroboros).
+	queueOutgoing   chan string   // the main queue is a ring buffer.
+	dev             bool          // if dev is true, we just use dummy locations.
+	minBatchGapTime time.Duration // minimum time between each call to ip-api
+	queryURL        string        // the batch query ip-api endpoint's URL
 	/*postBatchCallback is called after each batch was processed with the number
 	of IPs that were in that batch (batchSize), and the time since the last batch
 	was located (sinceLastBatchLocated). */
@@ -30,6 +34,31 @@ func NewGeolocator(queueCap int, dev bool, postBatchCallback *func(batchSize int
 		queueIncoming:     make(chan string, 100),
 		queueOutgoing:     make(chan string, queueCap),
 		dev:               dev,
+		minBatchGapTime:   5 * time.Second,
+		queryURL:          baseQueryURL,
+		postBatchCallback: postBatchCallback,
+	}
+
+	//Start the geolocator (queries ip-api periodically)
+	go g.start()
+
+	// Start the ring queue.
+	go g.ouroboros()
+
+	//Return the geolocator instance
+	return g
+}
+
+func NewProGeolocator(queueCap int, dev bool, postBatchCallback *func(batchSize int, sinceLastBatchLocated time.Duration), apiKey string, minBatchGapTime time.Duration) *Geolocator {
+	//Create a geolocator
+	g := &Geolocator{
+		cache:             make(map[string]*cachedGeolocation),
+		cacheMutex:        &sync.RWMutex{},
+		queueIncoming:     make(chan string, 100),
+		queueOutgoing:     make(chan string, queueCap),
+		dev:               dev,
+		minBatchGapTime:   minBatchGapTime,
+		queryURL:          baseQueryURL + "&key=" + apiKey,
 		postBatchCallback: postBatchCallback,
 	}
 
@@ -175,7 +204,7 @@ func (g *Geolocator) start() {
 		/*If it's been at least 5 seconds since the last call to ip-api, and there are IPs ready to locate, then we make the
 		locate the batch.*/
 		sinceLastBatch := time.Since(lastLocateCall)
-		if (len(batchToLocate) == 100 || len(g.queueOutgoing) < 10) && sinceLastBatch.Seconds() >= 5 {
+		if (len(batchToLocate) == 100 || len(g.queueOutgoing) < 10) && sinceLastBatch >= g.minBatchGapTime {
 			g.locateBatch(batchToLocate)
 			//Call our callback if we have one
 			if g.postBatchCallback != nil {
