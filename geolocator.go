@@ -7,6 +7,7 @@ import (
 )
 
 const baseQueryURL = "http://ip-api.com/batch?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,mobile,proxy,hosting,query"
+const baseProQueryURL = "http://pro.ip-api.com/batch?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,mobile,proxy,hosting,query"
 
 //Geolocator holds a cache and a queue of IPs for which the geolocation has been requested.
 type Geolocator struct {
@@ -58,7 +59,7 @@ func NewProGeolocator(queueCap int, dev bool, postBatchCallback *func(batchSize 
 		queueOutgoing:     make(chan string, queueCap),
 		dev:               dev,
 		minBatchGapTime:   minBatchGapTime,
-		queryURL:          baseQueryURL + "&key=" + apiKey,
+		queryURL:          baseProQueryURL + "&key=" + apiKey,
 		postBatchCallback: postBatchCallback,
 	}
 
@@ -201,8 +202,8 @@ func (g *Geolocator) start() {
 			}
 		}
 
-		/*If it's been at least 5 seconds since the last call to ip-api, and there are IPs ready to locate, then we make the
-		locate the batch.*/
+		/*If it's been at least g.minBatchGapTime since the last call to ip-api, and there is a full batch of IPs ready to
+		locate or the backlog is almost empty, then we locate the batch.*/
 		sinceLastBatch := time.Since(lastLocateCall)
 		if (len(batchToLocate) == 100 || len(g.queueOutgoing) < 10) && sinceLastBatch >= g.minBatchGapTime {
 			g.locateBatch(batchToLocate)
